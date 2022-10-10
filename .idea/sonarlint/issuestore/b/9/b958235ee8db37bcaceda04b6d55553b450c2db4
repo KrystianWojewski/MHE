@@ -1,0 +1,9 @@
+
+q	cpp:S5018"\Ensure that the move constructor of "MojaKlasa" is exception-free and declare it "noexcept".(ªê¸Ö
+s	cpp:S4963	"^Remove this class' destructor and move constructor so that the class follows the rule of Zero.(É–¤û
+I	cpp:S1709"/Add the "explicit" keyword to this constructor.(ªÁÉ²úÿÿÿÿ
+x	cpp:S3230"^Do not assign data members in a constructor. Initialize member "id" in an initialization list.(°åÃ»ûÿÿÿÿ
+r	cpp:S3230!"^Do not assign data members in a constructor. Initialize member "id" in an initialization list.(Ì£¤u
+>	cpp:S5817)")This function should be declared "const".(ÔÚ‘ö
+E	cpp:S36085"0Explicitly capture the required scope variables.(“ëÀó
+	cpp:S5350F"tMake the type of this variable a reference-to-const. The current type of this unnamed variable is "class InnyTyp &".(ş³ªöÿÿÿÿÿ
