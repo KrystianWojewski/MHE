@@ -16,10 +16,12 @@ struct nonogram_t{
 std::ostream &operator<<(std::ostream &o, const nonogram_t &nonogram) {
     using namespace std;
     for (int y = 0; y < nonogram.height; y++) {
-        o << "|";
         for (int x = 0; x < nonogram.width; x++) {
             auto &val = nonogram.board[y * nonogram.width + x];
-            o << ((val > 0) ? to_string(val) : ((val < 0) ? "  ***" : "")) << "\t|";
+            o << ((val > 0) ? "    " + to_string(val) : ((val < 0) ? "  ***" : "")) << "\t";
+            if (y >= 2 && x >= 1) {
+                o << "|";
+            }
         }
         o << endl;
     }
