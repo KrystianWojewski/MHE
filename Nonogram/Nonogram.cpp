@@ -4,6 +4,8 @@
 struct nonogram_t{
     int width;
     int height;
+    int top_params_height;
+    int left_parmas_width;
     std::vector<int> board;
     int &get(const int x, const int y) {
         return board[y*width+x];
@@ -19,7 +21,7 @@ std::ostream &operator<<(std::ostream &o, const nonogram_t &nonogram) {
         for (int x = 0; x < nonogram.width; x++) {
             auto &val = nonogram.board[y * nonogram.width + x];
             o << ((val > 0) ? "    " + to_string(val) : ((val < 0) ? "  ***" : "")) << "\t";
-            if (y >= 2 && x >= 1) {
+            if (y >= nonogram.top_params_height && x >= nonogram.left_parmas_width-1) {
                 o << "|";
             }
         }
@@ -31,20 +33,25 @@ std::ostream &operator<<(std::ostream &o, const nonogram_t &nonogram) {
 int main() {
     using namespace std;
     nonogram_t nonogram = {
-            7,
-            7,
+            8,
+            8,
+            3,
+            3,
             {
-                    0, 0, 3, 3, 0, 1, 0,
-                    0, 0, 1, 1, 2, 1, 1,
-                    3, 1, 0, 0, 0,0, 0,
-                    0, 4, 0, 0, 0,0, 0,
-                    0,2,0,0, 0,0, 0,
-                    0,1,0,0, 0, 0, 0,
-                    0,2,0,0, 0, 0, 0}
+                    0,0,0,0,0,0,1,0,
+                    0,0, 0, 3, 3, 0, 1, 0,
+                    0,0, 0, 1, 1, 2, 1, 1,
+                    1,3, 1, 0, 0, 0,0, 0,
+                    0,0, 4, 0, 0, 0,0, 0,
+                    0,0,2,0,0, 0,0, 0,
+                    0,0,1,0,0, 0, 0, 0,
+                    0,0,2,0,0, 0, 0, 0}
     };
     nonogram_t nonogram_solution = {
             7,
             7,
+            2,
+            2,
             {
                     0, 0, 3, 3, 0, 1, 0,
                     0, 0, 1, 1, 2, 1, 1,
