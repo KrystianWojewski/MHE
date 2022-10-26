@@ -15,7 +15,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 
 include_directories("${PROJECT_SOURCE_DIR}/src")
 
-file(GLOB_RECURSE mhe_SOURCES "Nonogram/*.cpp")
+file(GLOB_RECURSE mhe_SOURCES "Nonogram/Nonogram.cpp")
 
 add_executable(mhe ${mhe_SOURCES})
 
