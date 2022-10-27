@@ -48,7 +48,7 @@ std::ostream &operator<<(std::ostream &o, const nonogram_t &nonogram) {
             if (y >= nonogram.top_params_height && x >= nonogram.left_parmas_width) {
                 auto &center_val = nonogram.board[(y - nonogram.top_params_height) * (nonogram.width) +
                                                   (x - nonogram.left_parmas_width)];
-                o << "|" << ((center_val < 0) ? "  ***" : "")
+                o << "|" << ((center_val == -1) ? "  ***" : (center_val == -2) ? "   x" : "")
                   << ((x == nonogram.width + nonogram.left_parmas_width - 1) ? "\t|" : "\t");
             }
         }
@@ -69,7 +69,7 @@ int count_inside_bag_from_point(int x, int y, const nonogram_t &nonogram) {
                 if (nonogram.get_from_param(cx, cy) >= 0) {
                     count += nonogram.get_from_param(cx, cy);
                 }
-                if (nonogram.get_from_board(cx - nonogram.left_parmas_width, cy - nonogram.top_params_height) < 0) {
+                if (nonogram.get_from_board(cx - nonogram.left_parmas_width, cy - nonogram.top_params_height) == - 1) {
                     sum++;
                 }
                 cx += dx;
@@ -122,6 +122,19 @@ int count_inconsistent(const nonogram_t &nonogram) {
 
 double evaluate(const nonogram_t &nonogram) {
     return count_inconsistent(nonogram);
+}
+
+bool next_solution_x(nonogram_t &nonogram) {
+    int i = 0;
+    for (; i < nonogram.board.size(); i++) {
+        if (nonogram.board[i] == 0) {
+            nonogram.board[i] = -2;
+            break;
+        } else if (nonogram.board[i] == -2) {
+            nonogram.board[i] = 0;
+        }
+    }
+    return (i != nonogram.board.size());
 }
 
 bool next_solution(nonogram_t &nonogram) {
@@ -178,36 +191,43 @@ int main() {
 
     };
     nonogram_t nonogram_solution = {
-            3,
-            3,
+            5,
+            5,
             {
-                    -1, -1, 0,
-                    -1, 0, -1,
-                    0, 0, -1},
+                    -1, -2, -1, -2, -1,
+                    -1, -2, -2, -2, -2,
+                    -1, -1, -1, -2, -2,
+                    -2, -1, -1, -1, -2,
+                    -2, -1, -1, -1, -2,},
+            3,
             2,
-            1,
             {
-                    0, 0, 2, 1, 2,
-                    0, 2, 0, 0, 0,
-                    1, 1, 0, 0, 0,
-                    0, 1, 0, 0, 0
-            }
+                    0, 0, 0, 0, 0, 1, 0, 0,
+                    0, 0, 0, 3, 3, 3, 2, 1,
+                    1, 1, 1, 0, 0, 0, 0, 0,
+                    0, 0, 1, 0, 0, 0, 0, 0,
+                    0, 0, 3, 0, 0, 0, 0, 0,
+                    0, 0, 3, 0, 0, 0, 0, 0,
+                    0, 0, 3, 0, 0, 0, 0, 0}
+
     };
-   cout << nonogram << endl;
-    int n = 0;
+//   cout << nonogram << endl;
+//    int n = 0;
     while (next_solution(nonogram)) {
-//        if ((n % 10000) == 0) {
-//            cout << n << " : " << evaluate(nonogram) << endl << nonogram << endl;
-//        }
-        cout << evaluate(nonogram) << endl;
-        cout << nonogram << endl;
-        if (evaluate(nonogram) == 0) {
+        while (next_solution_x(nonogram)) {
+////        if ((n % 10000) == 0) {
+////            cout << n << " : " << evaluate(nonogram) << endl << nonogram << endl;
+////        }
+//        cout << evaluate(nonogram) << endl;
             cout << nonogram << endl;
-            break;
+//        if (evaluate(nonogram) == 0) {
+//            cout << nonogram << endl;
+//            break;
+//        }
+//        n++;
         }
-        n++;
     }
 //    cout << evaluate(nonogram_solution) << endl;
-//    cout << nonogram_solution << endl;
+    cout << nonogram_solution << endl;
     return 0;
 }
