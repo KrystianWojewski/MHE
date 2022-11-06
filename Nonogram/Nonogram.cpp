@@ -57,31 +57,53 @@ std::ostream &operator<<(std::ostream &o, const nonogram_t &nonogram) {
     return o;
 }
 
-int count_inside_bag_from_point(int x, int y, const nonogram_t &nonogram) {
+int evaluate_puzzle(int x, int y, const nonogram_t &nonogram) {
     using namespace std;
 
     auto func = [](int sum, int cx, int cy, int dx, int dy, const nonogram_t &nonogram) {
-        int count = 0;
+        vector<int> actual_params;
+        vector<int> result;
+        int error = 0;
         int py = cy, px = cx;
         try {
             while ((py == 0 && px >= nonogram.left_parmas_width) || (px == 0 && py >= nonogram.top_params_height)) {
 
-                if (nonogram.get_from_param(cx, cy) >= 0) {
-                    count += nonogram.get_from_param(cx, cy);
+                if (nonogram.get_from_param(cx, cy) > 0) {
+                    actual_params.push_back(nonogram.get_from_param(cx, cy));
                 }
-                if (nonogram.get_from_board(cx - nonogram.left_parmas_width, cy - nonogram.top_params_height) == - 1) {
-                    sum++;
+                if (cx >= nonogram.left_parmas_width && cy >= nonogram.top_params_height) {
+                    if (nonogram.get_from_board(cx - nonogram.left_parmas_width, cy - nonogram.top_params_height) ==
+                        -1) {
+                        sum++;
+                    }
+                    if (dy == 1 && cy == nonogram.height + nonogram.top_params_height - 1 && sum > 0) {
+                        result.push_back(sum);
+                        sum = 0;
+                    }
+                    if (dx == 1 && cx == nonogram.width + nonogram.left_parmas_width - 1 && sum > 0) {
+                        result.push_back(sum);
+                        sum = 0;
+                    }
+                    if (nonogram.get_from_board(cx - nonogram.left_parmas_width, cy - nonogram.top_params_height) == 0 && sum > 0) {
+                        result.push_back(sum);
+                        sum = 0;
+                    }
                 }
                 cx += dx;
                 cy += dy;
             }
         } catch (...) {
         }
-        if (count == sum) {
-            return 0;
+        if (actual_params.size() == result.size()) {
+            for (int i = 0; i < actual_params.size(); i++) {
+                if (actual_params[i] != result[i]) {
+                    error += 1;
+                }
+            }
         } else {
-            return count - sum;
+            error += 1;
         }
+        return error;
     };
 
     int sum = 0;
@@ -93,18 +115,6 @@ int count_inside_bag_from_point(int x, int y, const nonogram_t &nonogram) {
         int dx = 1, dy = 0;
         sum += func(sum, x, y, dx, dy, nonogram);
     }
-
-//    for (auto [dx, dy]: directions) {
-//        int cx = x + dx, cy = y + dy;
-//        try {
-//            while ((nonogram.get(cx, cy)) != 0) {
-//                sum++;
-//                cx += dx;
-//                cy += dy;
-//            }
-//        } catch (...) {
-//        }
-//    }
     return sum;
 }
 
@@ -113,7 +123,7 @@ int count_inconsistent(const nonogram_t &nonogram) {
     for (int y = 0; y < nonogram.height + nonogram.top_params_height; y++)
         for (int x = 0; x < nonogram.width + nonogram.left_parmas_width; x++) {
             if (nonogram.get_from_param(x, y) >= 0) {
-                int count = count_inside_bag_from_point(x, y, nonogram);
+                int count = evaluate_puzzle(x, y, nonogram);
                 error += std::abs(count);
             }
         }
@@ -122,19 +132,6 @@ int count_inconsistent(const nonogram_t &nonogram) {
 
 double evaluate(const nonogram_t &nonogram) {
     return count_inconsistent(nonogram);
-}
-
-bool next_solution_x(nonogram_t &nonogram) {
-    int i = 0;
-    for (; i < nonogram.board.size(); i++) {
-        if (nonogram.board[i] == 0) {
-            nonogram.board[i] = -2;
-            break;
-        } else if (nonogram.board[i] == -2) {
-            nonogram.board[i] = 0;
-        }
-    }
-    return (i != nonogram.board.size());
 }
 
 bool next_solution(nonogram_t &nonogram) {
@@ -194,11 +191,11 @@ int main() {
             5,
             5,
             {
-                    -1, -2, -1, -2, -1,
-                    -1, -2, -2, -2, -2,
-                    -1, -1, -1, -2, -2,
-                    -2, -1, -1, -1, -2,
-                    -2, -1, -1, -1, -2,},
+                    -1, 0, -1, 0, -1,
+                    -1, 0, 0, 0, 0,
+                    -1, -1, -1, 0, 0,
+                    0, -1, -1, -1, 0,
+                    0, -1, -1, -1, 0,},
             3,
             2,
             {
@@ -211,23 +208,19 @@ int main() {
                     0, 0, 3, 0, 0, 0, 0, 0}
 
     };
-//   cout << nonogram << endl;
-//    int n = 0;
+   cout << nonogram << endl;
+    int n = 0;
     while (next_solution(nonogram)) {
-        while (next_solution_x(nonogram)) {
-////        if ((n % 10000) == 0) {
-////            cout << n << " : " << evaluate(nonogram) << endl << nonogram << endl;
-////        }
-//        cout << evaluate(nonogram) << endl;
-            cout << nonogram << endl;
-//        if (evaluate(nonogram) == 0) {
-//            cout << nonogram << endl;
-//            break;
-//        }
-//        n++;
+        if ((n % 10000) == 0) {
+            cout << n << " : " << evaluate(nonogram) << endl << nonogram << endl;
         }
+        if (evaluate(nonogram) == 0) {
+            cout << nonogram << endl;
+            break;
+        }
+        n++;
     }
-//    cout << evaluate(nonogram_solution) << endl;
-    cout << nonogram_solution << endl;
+//    cout << evaluate(nonogram0) << endl;
+//    cout << nonogram0 << endl;
     return 0;
 }
