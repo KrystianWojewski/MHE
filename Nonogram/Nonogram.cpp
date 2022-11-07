@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <random>
 
 struct nonogram_t {
     int width;
@@ -26,7 +27,7 @@ struct nonogram_t {
 
     int get_from_board(const int x, const int y) const {
         if ((x < 0) || (x >= width) || (y < 0) || (y >= height)) {
-//            throw std::invalid_argument("out of board");
+            throw std::invalid_argument("out of board");
             return 0;
         } else {
             return board.at(y * width + x);
@@ -84,7 +85,8 @@ int evaluate_puzzle(int x, int y, const nonogram_t &nonogram) {
                         result.push_back(sum);
                         sum = 0;
                     }
-                    if (nonogram.get_from_board(cx - nonogram.left_parmas_width, cy - nonogram.top_params_height) == 0 && sum > 0) {
+                    if (nonogram.get_from_board(cx - nonogram.left_parmas_width, cy - nonogram.top_params_height) ==
+                        0 && sum > 0) {
                         result.push_back(sum);
                         sum = 0;
                     }
@@ -94,15 +96,22 @@ int evaluate_puzzle(int x, int y, const nonogram_t &nonogram) {
             }
         } catch (...) {
         }
-        if (actual_params.size() == result.size()) {
+        if (actual_params.size() >= result.size()) {
             for (int i = 0; i < actual_params.size(); i++) {
-                if (actual_params[i] != result[i]) {
-                    error += 1;
+                if (actual_params.size() == result.size()) {
+                    if (actual_params[i] != result[i]) {
+                        error += actual_params[i] - result[i];
+                    }
+                } else if (actual_params.size() > result.size()) {
+                    error += actual_params[i];
                 }
             }
         } else {
-            error += 1;
+            for (int i = 0; i < result.size(); i++) {
+                error += result[i];
+            }
         }
+
         return error;
     };
 
@@ -147,9 +156,52 @@ bool next_solution(nonogram_t &nonogram) {
     return (i != nonogram.board.size());
 }
 
+std::vector<nonogram_t> generate_neighbours(const nonogram_t &p, const int x, const int y) {
+    std::vector<nonogram_t> neighbours;
+    std::vector<std::pair<int, int>> directions = {{-1, 0},
+                                                   {1,  0},
+                                                   {0,  -1},
+                                                   {0,  1}};
+
+    for (auto [dx, dy]: directions) {
+        int cx = x + dx, cy = y + dy;
+        try {
+            auto new_board = p;
+            new_board.board[cy * p.width + cx] = -1 - new_board.get_from_board(cx, cy);
+            neighbours.push_back(new_board);
+
+        } catch (...) {
+        }
+    }
+    return neighbours;
+}
+
+nonogram_t generate_random_solution(const nonogram_t &p) {
+    using namespace std;
+    static random_device rd;
+    static mt19937 mt(rd());
+    uniform_int_distribution<int> distr(-1, 0);
+    nonogram_t rand_sol = p;
+    for (int i = 0; i < p.board.size(); i++) {
+        if (p.board[i] <= 0) {
+            auto new_board = p;
+            rand_sol.board[i] = distr(mt);
+        }
+    }
+    return rand_sol;
+}
+
+nonogram_t hill_climb_det(nonogram_t puzzle, int iterations) {
+    //TODO
+}
+
 int main() {
     using namespace std;
-    nonogram_t nonogram = {
+
+    static random_device rd;
+    static mt19937 mt(rd());
+
+    nonogram_t nonogram1 = {
             5,
             5,
             {
@@ -208,19 +260,74 @@ int main() {
                     0, 0, 3, 0, 0, 0, 0, 0}
 
     };
-   cout << nonogram << endl;
-    int n = 0;
-    while (next_solution(nonogram)) {
-        if ((n % 10000) == 0) {
-            cout << n << " : " << evaluate(nonogram) << endl << nonogram << endl;
-        }
-        if (evaluate(nonogram) == 0) {
-            cout << nonogram << endl;
-            break;
-        }
-        n++;
+    nonogram_t nonogram_wrong = {
+            5,
+            5,
+            {
+                    -1, 0, 0, 0, 0,
+                    -1, 0, -1, 0, 0,
+                    -1, 0, 0, 0, 0,
+                    0, -1, -1, -1, 0,
+                    0, -1, -1, -1, 0,},
+            3,
+            2,
+            {
+                    0, 0, 0, 0, 0, 1, 0, 0,
+                    0, 0, 0, 3, 3, 3, 2, 1,
+                    1, 1, 1, 0, 0, 0, 0, 0,
+                    0, 0, 1, 0, 0, 0, 0, 0,
+                    0, 0, 3, 0, 0, 0, 0, 0,
+                    0, 0, 3, 0, 0, 0, 0, 0,
+                    0, 0, 3, 0, 0, 0, 0, 0}
+
+    };
+//    -----------------------brute_force-----------------------
+    auto nonogram = nonogram1;
+//    cout << nonogram << endl;
+//    int n = 0;
+//    while (next_solution(nonogram)) {
+//        if ((n % 10000) == 0) {
+//            cout << n << " : " << evaluate(nonogram) << endl << nonogram << endl;
+//        }
+//        if (evaluate(nonogram) == 0) {
+//            cout << nonogram << endl;
+//            break;
+//        }
+//        n++;
+//    }
+
+//  -----------------------random_solution-----------------------
+//    int n = 0;
+//    while (true) {
+//        auto nonogram = generate_random_solution(nonogram1);
+//        if ((n % 10000) == 0) {
+//            cout << n << " : " << evaluate(nonogram) << endl << nonogram << endl;
+//        }
+//        if (evaluate(nonogram) == 0) {
+//            cout << nonogram << endl;
+//            break;
+//        }
+//        n++;
+//    }
+
+    uniform_int_distribution<int> distrY(0, nonogram.height - 1);
+    uniform_int_distribution<int> distrX(0, nonogram.width - 1);
+
+    int x = distrX(mt);
+    int y = distrY(mt);
+
+    for (auto neighbour: generate_neighbours(nonogram, x, y)) {
+        cout << " ------------------------------" << endl;
+        cout << evaluate(neighbour) << endl;
+        cout << neighbour << endl;
     }
-//    cout << evaluate(nonogram0) << endl;
-//    cout << nonogram0 << endl;
+
+//    cout << "----------------------------------------" << endl;
+//    cout <<  generate_random_solution(nonogram) << endl;
+
+
+//    cout << evaluate(nonogram) << endl;
+//    cout << nonogram << endl;
+
     return 0;
 }
