@@ -1,6 +1,11 @@
 #include <iostream>
 #include <vector>
 #include <random>
+#include <functional>
+#include <map>
+
+std::random_device rd;
+std::mt19937 mt(rd());
 
 struct nonogram_t {
     int width;
@@ -96,22 +101,29 @@ int evaluate_puzzle(int x, int y, const nonogram_t &nonogram) {
             }
         } catch (...) {
         }
-        if (actual_params.size() >= result.size()) {
+        if (actual_params.size() == result.size()) {
             for (int i = 0; i < actual_params.size(); i++) {
-                if (actual_params.size() == result.size()) {
-                    if (actual_params[i] != result[i]) {
-                        error += actual_params[i] - result[i];
-                    }
-                } else if (actual_params.size() > result.size()) {
-                    error += actual_params[i];
-                }
+                error += abs(actual_params[i] - result[i]);
             }
-        } else {
-            for (int i = 0; i < result.size(); i++) {
+        }
+        if (actual_params.size() > result.size()) {
+            int i = 0;
+            for (; i < result.size(); i++) {
+                error += abs(actual_params[i] - result[i]);
+            }
+            for (; i < actual_params.size(); i++) {
+                error += actual_params[i];
+            }
+        }
+        if (actual_params.size() < result.size()) {
+            int i = 0;
+            for (; i < actual_params.size(); i++) {
+                error += abs(result[i] - actual_params[i]);
+            }
+            for (; i < result.size(); i++) {
                 error += result[i];
             }
         }
-
         return error;
     };
 
@@ -133,7 +145,7 @@ int count_inconsistent(const nonogram_t &nonogram) {
         for (int x = 0; x < nonogram.width + nonogram.left_parmas_width; x++) {
             if (nonogram.get_from_param(x, y) >= 0) {
                 int count = evaluate_puzzle(x, y, nonogram);
-                error += std::abs(count);
+                error += count;
             }
         }
     return error;
@@ -156,8 +168,14 @@ bool next_solution(nonogram_t &nonogram) {
     return (i != nonogram.board.size());
 }
 
-std::vector<nonogram_t> generate_neighbours(const nonogram_t &p, const int x, const int y) {
+std::vector<nonogram_t> generate_neighbours(const nonogram_t &p) {
     std::vector<nonogram_t> neighbours;
+    using namespace std;
+    uniform_int_distribution<int> distrY(0, p.height - 1);
+    uniform_int_distribution<int> distrX(0, p.width - 1);
+
+    int x = distrX(mt);
+    int y = distrY(mt);
     std::vector<std::pair<int, int>> directions = {{-1, 0},
                                                    {1,  0},
                                                    {0,  -1},
@@ -178,8 +196,6 @@ std::vector<nonogram_t> generate_neighbours(const nonogram_t &p, const int x, co
 
 nonogram_t generate_random_solution(const nonogram_t &p) {
     using namespace std;
-    static random_device rd;
-    static mt19937 mt(rd());
     uniform_int_distribution<int> distr(-1, 0);
     nonogram_t rand_sol = p;
     for (int i = 0; i < p.board.size(); i++) {
@@ -191,17 +207,53 @@ nonogram_t generate_random_solution(const nonogram_t &p) {
     return rand_sol;
 }
 
-nonogram_t hill_climb_det(nonogram_t puzzle, int iterations) {
-    //TODO
+nonogram_t random_sampling(nonogram_t nonogram, int iterations){
+    auto result =  generate_random_solution(nonogram);
+    for (int iteration = 0; iteration < iterations; iteration++) {
+        if (evaluate(result) > evaluate(generate_random_solution(nonogram))) {
+            result = generate_random_solution(nonogram);
+        }
+    }
+    return result;
 }
 
-int main() {
+nonogram_t hill_climb_det(nonogram_t start_nonogram, int iterations) {
+    nonogram_t best_p = start_nonogram;
+    for (int iteration = 0; iteration < iterations; iteration++) {
+        auto close_points = generate_neighbours(best_p);
+        auto best_neighbour_func = [=]() {
+            auto result = close_points.at(0);
+            for (int i = 1; i < close_points.size(); i++) {
+                if (evaluate(result) > evaluate(close_points.at(i))) {
+                    result = close_points.at(i);
+                }
+            }
+            return result;
+        };
+        auto best_neighbour = best_neighbour_func();
+        if (evaluate(best_neighbour) < evaluate(best_p)) best_p = best_neighbour;
+    }
+    return best_p;
+}
+
+nonogram_t hill_climb_rand(nonogram_t start_nonogram, int iterations) {
+    nonogram_t best_p = start_nonogram;
+    for (int iteration = 0; iteration < iterations; iteration++) {
+        auto close_points = generate_neighbours(best_p);
+        std::uniform_int_distribution<int> distr(0, close_points.size() - 1);
+        auto rand_neighbour = close_points.at(distr(mt));
+        if (evaluate(rand_neighbour) < evaluate(best_p)) best_p = rand_neighbour;
+    }
+    return best_p;
+}
+
+
+int main(int argc, char **argv) {
     using namespace std;
 
-    static random_device rd;
-    static mt19937 mt(rd());
+    map<string, nonogram_t> formatery_puzzle;
 
-    nonogram_t nonogram1 = {
+    formatery_puzzle["nonogram1"] = {
             5,
             5,
             {
@@ -222,7 +274,7 @@ int main() {
                     0, 0, 3, 0, 0, 0, 0, 0}
 
     };
-    nonogram_t nonogram0 = {
+    formatery_puzzle["nonogram0"] = {
             3,
             3,
             {
@@ -239,7 +291,7 @@ int main() {
             }
 
     };
-    nonogram_t nonogram_solution = {
+    formatery_puzzle["nonogram_solution"] = {
             5,
             5,
             {
@@ -260,15 +312,15 @@ int main() {
                     0, 0, 3, 0, 0, 0, 0, 0}
 
     };
-    nonogram_t nonogram_wrong = {
+    formatery_puzzle["nonogram_wrong"] = {
             5,
             5,
             {
-                    -1, 0, 0, 0, 0,
-                    -1, 0, -1, 0, 0,
-                    -1, 0, 0, 0, 0,
-                    0, -1, -1, -1, 0,
-                    0, -1, -1, -1, 0,},
+                    0, 0, 0, 0, -1,
+                    0, 0, -1, 0, 0,
+                    -1, -1, 0, -1, 0,
+                    -1, -1, -1, 0, 0,
+                    -1, -1, -1, 0, 0,},
             3,
             2,
             {
@@ -281,46 +333,60 @@ int main() {
                     0, 0, 3, 0, 0, 0, 0, 0}
 
     };
-//    -----------------------brute_force-----------------------
-    auto nonogram = nonogram1;
-//    cout << nonogram << endl;
-//    int n = 0;
-//    while (next_solution(nonogram)) {
-//        if ((n % 10000) == 0) {
-//            cout << n << " : " << evaluate(nonogram) << endl << nonogram << endl;
-//        }
-//        if (evaluate(nonogram) == 0) {
-//            cout << nonogram << endl;
-//            break;
-//        }
-//        n++;
+    map<string, function<void()>> formatery_calc;
+
+    string calc_method = argv[1];
+
+    auto nonogram = formatery_puzzle.at(argv[3]);
+//    auto nonogram = generate_random_solution(nonogram);
+
+    formatery_calc["brute_force"] = [&]() {
+        cout << nonogram << endl;
+        int n = 0;
+        while (next_solution(nonogram)) {
+            if ((n % 10000) == 0) {
+                cout << n << " : " << evaluate(nonogram) << endl << nonogram << endl;
+            }
+            if (evaluate(nonogram) == 0) {
+                cout << nonogram << endl;
+                break;
+            }
+            n++;
+        }
+    };
+
+    formatery_calc["random_sampling"] = [&]() {
+        cout << nonogram << endl;
+        cout << "-----------------------------------------------" << endl;
+        auto result = random_sampling(nonogram, stoi(argv[2]));
+        cout << evaluate(result) << endl;
+        cout << result << endl;
+    };
+
+    formatery_calc["hill_climb_det"] = [&]() {
+        cout << nonogram << endl;
+        cout << "-----------------------------------------------" << endl;
+        auto result = hill_climb_det(generate_random_solution(nonogram), stoi(argv[2]));
+        cout << evaluate(result) << endl;
+        cout << result << endl;
+    };
+
+    formatery_calc["hill_climb_rand"] = [&]() {
+        cout << nonogram << endl;
+        cout << "-----------------------------------------------" << endl;
+        auto result = hill_climb_rand(generate_random_solution(nonogram), stoi(argv[2]));
+        cout << evaluate(result) << endl;
+        cout << result << endl;
+    };
+
+    formatery_calc.at(calc_method)();
+
+//  -----------------------check_neighbors-----------------------
+//    for (auto neighbour: generate_neighbours(nonogram)) {
+//        cout << " ------------------------------" << endl;
+//        cout << evaluate(neighbour) << endl;
+//        cout << neighbour << endl;
 //    }
-
-//  -----------------------random_solution-----------------------
-//    int n = 0;
-//    while (true) {
-//        auto nonogram = generate_random_solution(nonogram1);
-//        if ((n % 10000) == 0) {
-//            cout << n << " : " << evaluate(nonogram) << endl << nonogram << endl;
-//        }
-//        if (evaluate(nonogram) == 0) {
-//            cout << nonogram << endl;
-//            break;
-//        }
-//        n++;
-//    }
-
-    uniform_int_distribution<int> distrY(0, nonogram.height - 1);
-    uniform_int_distribution<int> distrX(0, nonogram.width - 1);
-
-    int x = distrX(mt);
-    int y = distrY(mt);
-
-    for (auto neighbour: generate_neighbours(nonogram, x, y)) {
-        cout << " ------------------------------" << endl;
-        cout << evaluate(neighbour) << endl;
-        cout << neighbour << endl;
-    }
 
 //    cout << "----------------------------------------" << endl;
 //    cout <<  generate_random_solution(nonogram) << endl;
