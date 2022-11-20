@@ -210,8 +210,9 @@ nonogram_t generate_random_solution(const nonogram_t &p) {
 nonogram_t random_sampling(nonogram_t nonogram, int iterations){
     auto result =  generate_random_solution(nonogram);
     for (int iteration = 0; iteration < iterations; iteration++) {
-        if (evaluate(result) > evaluate(generate_random_solution(nonogram))) {
-            result = generate_random_solution(nonogram);
+        nonogram_t gen_value = generate_random_solution(nonogram);
+        if (evaluate(result) > evaluate(gen_value)) {
+            result = gen_value;
         }
     }
     return result;
