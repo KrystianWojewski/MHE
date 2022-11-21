@@ -171,6 +171,21 @@ bool next_solution(nonogram_t &nonogram) {
 std::vector<nonogram_t> generate_neighbours(const nonogram_t &p) {
     std::vector<nonogram_t> neighbours;
     using namespace std;
+    for (int i = 0; i < p.board.size(); i++) {
+        try {
+            auto new_board = p;
+            new_board.board[i] = -1 - new_board.board[i];
+            neighbours.push_back(new_board);
+
+        } catch (...) {
+        }
+    }
+    return neighbours;
+}
+
+std::vector<nonogram_t> generate_random_neighbours(const nonogram_t &p) {
+    std::vector<nonogram_t> neighbours;
+    using namespace std;
     uniform_int_distribution<int> distrY(0, p.height - 1);
     uniform_int_distribution<int> distrX(0, p.width - 1);
 
@@ -240,10 +255,18 @@ nonogram_t hill_climb_det(nonogram_t start_nonogram, int iterations) {
 nonogram_t hill_climb_rand(nonogram_t start_nonogram, int iterations) {
     nonogram_t best_p = start_nonogram;
     for (int iteration = 0; iteration < iterations; iteration++) {
-        auto close_points = generate_neighbours(best_p);
-        std::uniform_int_distribution<int> distr(0, close_points.size() - 1);
-        auto rand_neighbour = close_points.at(distr(mt));
-        if (evaluate(rand_neighbour) < evaluate(best_p)) best_p = rand_neighbour;
+        auto close_points = generate_random_neighbours(best_p);
+        auto best_neighbour_func = [=]() {
+            auto result = close_points.at(0);
+            for (int i = 1; i < close_points.size(); i++) {
+                if (evaluate(result) > evaluate(close_points.at(i))) {
+                    result = close_points.at(i);
+                }
+            }
+            return result;
+        };
+        auto best_neighbour = best_neighbour_func();
+        if (evaluate(best_neighbour) < evaluate(best_p)) best_p = best_neighbour;
     }
     return best_p;
 }
@@ -262,7 +285,7 @@ int main(int argc, char **argv) {
                     0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0,},
+                    0, 0, 0, 0, 0},
             3,
             2,
             {
@@ -380,14 +403,21 @@ int main(int argc, char **argv) {
         cout << result << endl;
     };
 
-    formatery_calc.at(calc_method)();
+//    formatery_calc.at(calc_method)();
 
-//  -----------------------check_neighbors-----------------------
-//    for (auto neighbour: generate_neighbours(nonogram)) {
+//  -----------------------check_random_neighbors-----------------------
+//    for (auto neighbour: generate_random_neighbours(nonogram)) {
 //        cout << " ------------------------------" << endl;
 //        cout << evaluate(neighbour) << endl;
 //        cout << neighbour << endl;
 //    }
+
+//  -----------------------check_neighbors-----------------------
+    for (auto neighbour: generate_neighbours(nonogram)) {
+        cout << " ------------------------------" << endl;
+        cout << evaluate(neighbour) << endl;
+        cout << neighbour << endl;
+    }
 
 //    cout << "----------------------------------------" << endl;
 //    cout <<  generate_random_solution(nonogram) << endl;
