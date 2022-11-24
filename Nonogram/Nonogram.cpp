@@ -1,8 +1,11 @@
 #include <iostream>
 #include <vector>
+#include <cmath>
 #include <random>
-#include <functional>
+#include <iomanip>
 #include <map>
+#include <list>
+#include <functional>
 
 std::random_device rd;
 std::mt19937 mt(rd());
@@ -168,7 +171,7 @@ bool next_solution(nonogram_t &nonogram) {
     return (i != nonogram.board.size());
 }
 
-std::vector<nonogram_t> generate_neighbours(const nonogram_t &p) {
+std::vector<nonogram_t> generate_neighbours(nonogram_t &p) {
     std::vector<nonogram_t> neighbours;
     using namespace std;
     for (int i = 0; i < p.board.size(); i++) {
@@ -209,7 +212,7 @@ std::vector<nonogram_t> generate_random_neighbours(const nonogram_t &p) {
     return neighbours;
 }
 
-nonogram_t generate_random_solution(const nonogram_t &p) {
+nonogram_t generate_random_solution(nonogram_t &p) {
     using namespace std;
     uniform_int_distribution<int> distr(-1, 0);
     nonogram_t rand_sol = p;
@@ -271,6 +274,38 @@ nonogram_t hill_climb_rand(nonogram_t start_nonogram, int iterations) {
     return best_p;
 }
 
+nonogram_t tabu_search(nonogram_t nonogram, int iterations, int tabu_size) {
+    using namespace std;
+    list<nonogram_t> tabu_list;
+    tabu_list.push_back(nonogram);
+    auto best_so_far = tabu_list.back();
+    for (int n = 0; n < iterations; n++) {
+        vector<nonogram_t> neighbours;
+//        for (auto e: generate_neighbours(tabu_list.back())) {
+//            bool found = (std::find(tabu_list.begin(), tabu_list.end(), e) != tabu_list.end());
+//            if (!found) neighbours.push_back(e);
+//        }
+        cout << n << " " << evaluate(tabu_list.back()) << " " << evaluate(best_so_far) << endl;
+        for (auto e: generate_neighbours(tabu_list.back())) {
+            for (auto b : tabu_list) {
+                if (e.board != b.board){
+                    neighbours.push_back(e);
+                }
+            }
+        }
+        if (neighbours.size() == 0) {
+            cerr << "we ate our tail :/" << endl;
+            break;
+        }
+        tabu_list.push_back(*std::min_element(neighbours.begin(), neighbours.end(),
+                                              [](auto l, auto r) { return evaluate(l) < evaluate(r); }));
+        if (evaluate(tabu_list.back()) <= evaluate(best_so_far)) {
+            best_so_far = tabu_list.back();
+        }
+        if (tabu_list.size() > tabu_size) tabu_list.pop_front();
+    }
+    return best_so_far;
+}
 
 int main(int argc, char **argv) {
     using namespace std;
@@ -360,6 +395,7 @@ int main(int argc, char **argv) {
     map<string, function<void()>> formatery_calc;
 
     string calc_method = argv[1];
+    int iterations = stoi(argv[2]);
 
     auto nonogram = formatery_puzzle.at(argv[3]);
 //    auto nonogram = generate_random_solution(nonogram);
@@ -382,7 +418,7 @@ int main(int argc, char **argv) {
     formatery_calc["random_sampling"] = [&]() {
         cout << nonogram << endl;
         cout << "-----------------------------------------------" << endl;
-        auto result = random_sampling(nonogram, stoi(argv[2]));
+        auto result = random_sampling(nonogram, iterations);
         cout << evaluate(result) << endl;
         cout << result << endl;
     };
@@ -390,7 +426,7 @@ int main(int argc, char **argv) {
     formatery_calc["hill_climb_det"] = [&]() {
         cout << nonogram << endl;
         cout << "-----------------------------------------------" << endl;
-        auto result = hill_climb_det(generate_random_solution(nonogram), stoi(argv[2]));
+        auto result = hill_climb_det(generate_random_solution(nonogram), iterations);
         cout << evaluate(result) << endl;
         cout << result << endl;
     };
@@ -398,12 +434,22 @@ int main(int argc, char **argv) {
     formatery_calc["hill_climb_rand"] = [&]() {
         cout << nonogram << endl;
         cout << "-----------------------------------------------" << endl;
-        auto result = hill_climb_rand(generate_random_solution(nonogram), stoi(argv[2]));
+        auto result = hill_climb_rand(generate_random_solution(nonogram), iterations);
         cout << evaluate(result) << endl;
         cout << result << endl;
     };
 
-//    formatery_calc.at(calc_method)();
+    formatery_calc["tabu_search"] = [&]() {
+        int tabu_size = 100;
+        if (argc > 4) tabu_size = stoi(argv[4]);
+        cout << nonogram << endl;
+        cout << "-----------------------------------------------" << endl;
+        auto result = tabu_search(generate_random_solution(nonogram), iterations, tabu_size);
+        cout << evaluate(result) << endl;
+        cout << result << endl;
+    };
+
+    formatery_calc.at(calc_method)();
 
 //  -----------------------check_random_neighbors-----------------------
 //    for (auto neighbour: generate_random_neighbours(nonogram)) {
@@ -413,11 +459,11 @@ int main(int argc, char **argv) {
 //    }
 
 //  -----------------------check_neighbors-----------------------
-    for (auto neighbour: generate_neighbours(nonogram)) {
-        cout << " ------------------------------" << endl;
-        cout << evaluate(neighbour) << endl;
-        cout << neighbour << endl;
-    }
+//    for (auto neighbour: generate_neighbours(nonogram)) {
+//        cout << " ------------------------------" << endl;
+//        cout << evaluate(neighbour) << endl;
+//        cout << neighbour << endl;
+//    }
 
 //    cout << "----------------------------------------" << endl;
 //    cout <<  generate_random_solution(nonogram) << endl;
