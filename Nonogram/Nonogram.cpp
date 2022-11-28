@@ -6,9 +6,14 @@
 #include <map>
 #include <list>
 #include <functional>
+#include <fstream>
+
+//#include "tp_args.hpp"
 
 std::random_device rd;
 std::mt19937 mt(rd());
+
+std::ofstream c_out("stdout.txt");
 
 struct nonogram_t {
     int width;
@@ -225,18 +230,33 @@ nonogram_t generate_random_solution(nonogram_t &p) {
     return rand_sol;
 }
 
-nonogram_t random_sampling(nonogram_t nonogram, int iterations){
-    auto result =  generate_random_solution(nonogram);
-    for (int iteration = 0; iteration < iterations; iteration++) {
-        nonogram_t gen_value = generate_random_solution(nonogram);
-        if (evaluate(result) > evaluate(gen_value)) {
-            result = gen_value;
+nonogram_t brute_force(nonogram_t nonogram_a, int iterations, bool show_progress = false) {
+    auto nonogram = generate_random_solution(nonogram_a);
+    auto best_so_far = nonogram;
+    for (int i = 0; i < iterations; i++) {
+        next_solution(nonogram);
+        if (show_progress) std::cout << i << " " << evaluate(nonogram) << "  " << evaluate(best_so_far) << std::endl;
+        if (evaluate(nonogram) < evaluate(best_so_far)) {
+            best_so_far = nonogram;
         }
     }
-    return result;
+    return best_so_far;
 }
 
-nonogram_t hill_climb_det(nonogram_t start_nonogram, int iterations) {
+nonogram_t random_sampling(nonogram_t nonogram_a, int iterations, bool show_progress = false) {
+    auto nonogram = generate_random_solution(nonogram_a);
+    auto best_so_far = nonogram;
+    for (int i = 0; i < iterations; i++) {
+        nonogram = generate_random_solution(best_so_far);
+        if (show_progress) std::cout << i << " " << evaluate(nonogram) << "  " << evaluate(best_so_far) << std::endl;
+        if (evaluate(nonogram) < evaluate(best_so_far)) {
+            best_so_far = nonogram;
+        }
+    }
+    return best_so_far;
+}
+
+nonogram_t hill_climb_det(nonogram_t start_nonogram, int iterations, bool show_progress = false) {
     nonogram_t best_p = start_nonogram;
     for (int iteration = 0; iteration < iterations; iteration++) {
         auto close_points = generate_neighbours(best_p);
@@ -255,7 +275,7 @@ nonogram_t hill_climb_det(nonogram_t start_nonogram, int iterations) {
     return best_p;
 }
 
-nonogram_t hill_climb_rand(nonogram_t start_nonogram, int iterations) {
+nonogram_t hill_climb_rand(nonogram_t start_nonogram, int iterations, bool show_progress = false) {
     nonogram_t best_p = start_nonogram;
     for (int iteration = 0; iteration < iterations; iteration++) {
         auto close_points = generate_random_neighbours(best_p);
@@ -274,25 +294,27 @@ nonogram_t hill_climb_rand(nonogram_t start_nonogram, int iterations) {
     return best_p;
 }
 
-nonogram_t tabu_search(nonogram_t nonogram, int iterations, int tabu_size) {
+bool operator==(nonogram_t l, nonogram_t r) {
+    if (l.width != r.width) return false;
+    if (l.height != r.height) return false;
+    for (unsigned i = 0; i < r.board.size(); i++) {
+        if (l.board.at(i) != r.board.at(i)) return false;
+    }
+    return true;
+}
+
+nonogram_t tabu_search(nonogram_t nonogram, int iterations, bool show_progress = false, int tabu_size = 1000) {
     using namespace std;
     list<nonogram_t> tabu_list;
     tabu_list.push_back(nonogram);
     auto best_so_far = tabu_list.back();
     for (int n = 0; n < iterations; n++) {
         vector<nonogram_t> neighbours;
-//        for (auto e: generate_neighbours(tabu_list.back())) {
-//            bool found = (std::find(tabu_list.begin(), tabu_list.end(), e) != tabu_list.end());
-//            if (!found) neighbours.push_back(e);
-//        }
-        cout << n << " " << evaluate(tabu_list.back()) << " " << evaluate(best_so_far) << endl;
         for (auto e: generate_neighbours(tabu_list.back())) {
-            for (auto b : tabu_list) {
-                if (e.board != b.board){
-                    neighbours.push_back(e);
-                }
-            }
+            bool found = (std::find(tabu_list.begin(), tabu_list.end(), e) != tabu_list.end());
+            if (!found) neighbours.push_back(e);
         }
+        cout << n << " " << evaluate(tabu_list.back()) << " " << evaluate(best_so_far) << endl;
         if (neighbours.size() == 0) {
             cerr << "we ate our tail :/" << endl;
             break;
@@ -307,12 +329,213 @@ nonogram_t tabu_search(nonogram_t nonogram, int iterations, int tabu_size) {
     return best_so_far;
 }
 
+//int main(int argc, char **argv) {
+//    using namespace std;
+//
+//    map<string, nonogram_t> formatery_puzzle;
+//
+//    formatery_puzzle["nonogram1"] = {
+//            5,
+//            5,
+//            {
+//                    0, 0, 0, 0, 0,
+//                    0, 0, 0, 0, 0,
+//                    0, 0, 0, 0, 0,
+//                    0, 0, 0, 0, 0,
+//                    0, 0, 0, 0, 0},
+//            3,
+//            2,
+//            {
+//                    0, 0, 0, 0, 0, 1, 0, 0,
+//                    0, 0, 0, 3, 3, 3, 2, 1,
+//                    1, 1, 1, 0, 0, 0, 0, 0,
+//                    0, 0, 1, 0, 0, 0, 0, 0,
+//                    0, 0, 3, 0, 0, 0, 0, 0,
+//                    0, 0, 3, 0, 0, 0, 0, 0,
+//                    0, 0, 3, 0, 0, 0, 0, 0}
+//
+//    };
+//    formatery_puzzle["nonogram0"] = {
+//            3,
+//            3,
+//            {
+//                    0, 0, 0,
+//                    0, 0, 0,
+//                    0, 0, 0},
+//            2,
+//            1,
+//            {
+//                    0, 0, 2, 1, 2,
+//                    0, 2, 0, 0, 0,
+//                    1, 1, 0, 0, 0,
+//                    0, 1, 0, 0, 0
+//            }
+//
+//    };
+//    formatery_puzzle["nonogram_solution"] = {
+//            5,
+//            5,
+//            {
+//                    -1, 0, -1, 0, -1,
+//                    -1, 0, 0, 0, 0,
+//                    -1, -1, -1, 0, 0,
+//                    0, -1, -1, -1, 0,
+//                    0, -1, -1, -1, 0,},
+//            3,
+//            2,
+//            {
+//                    0, 0, 0, 0, 0, 1, 0, 0,
+//                    0, 0, 0, 3, 3, 3, 2, 1,
+//                    1, 1, 1, 0, 0, 0, 0, 0,
+//                    0, 0, 1, 0, 0, 0, 0, 0,
+//                    0, 0, 3, 0, 0, 0, 0, 0,
+//                    0, 0, 3, 0, 0, 0, 0, 0,
+//                    0, 0, 3, 0, 0, 0, 0, 0}
+//
+//    };
+//    formatery_puzzle["nonogram_wrong"] = {
+//            5,
+//            5,
+//            {
+//                    0, 0, 0, 0, -1,
+//                    0, 0, -1, 0, 0,
+//                    -1, -1, 0, -1, 0,
+//                    -1, -1, -1, 0, 0,
+//                    -1, -1, -1, 0, 0,},
+//            3,
+//            2,
+//            {
+//                    0, 0, 0, 0, 0, 1, 0, 0,
+//                    0, 0, 0, 3, 3, 3, 2, 1,
+//                    1, 1, 1, 0, 0, 0, 0, 0,
+//                    0, 0, 1, 0, 0, 0, 0, 0,
+//                    0, 0, 3, 0, 0, 0, 0, 0,
+//                    0, 0, 3, 0, 0, 0, 0, 0,
+//                    0, 0, 3, 0, 0, 0, 0, 0}
+//
+//    };
+//    map<string, function<void()>> formatery_calc;
+//
+//    string calc_method = argv[1];
+//    int iterations = stoi(argv[2]);
+//
+//    auto nonogram = formatery_puzzle.at(argv[3]);
+////    auto nonogram = generate_random_solution(nonogram);
+//
+//    formatery_calc["brute_force"] = [&]() {
+//        cout << nonogram << endl;
+//        int n = 0;
+//        while (next_solution(nonogram)) {
+//            if ((n % 10000) == 0) {
+//                cout << n << " : " << evaluate(nonogram) << endl << nonogram << endl;
+//            }
+//            if (evaluate(nonogram) == 0) {
+//                cout << nonogram << endl;
+//                break;
+//            }
+//            n++;
+//        }
+//    };
+//
+//    formatery_calc["random_sampling"] = [&]() {
+//        cout << nonogram << endl;
+//        cout << "-----------------------------------------------" << endl;
+//        auto result = random_sampling(nonogram, iterations);
+//        cout << evaluate(result) << endl;
+//        cout << result << endl;
+//    };
+//
+//    formatery_calc["hill_climb_det"] = [&]() {
+//        cout << nonogram << endl;
+//        cout << "-----------------------------------------------" << endl;
+//        auto result = hill_climb_det(generate_random_solution(nonogram), iterations);
+//        cout << evaluate(result) << endl;
+//        cout << result << endl;
+//    };
+//
+//    formatery_calc["hill_climb_rand"] = [&]() {
+//        cout << nonogram << endl;
+//        cout << "-----------------------------------------------" << endl;
+//        auto result = hill_climb_rand(generate_random_solution(nonogram), iterations);
+//        cout << evaluate(result) << endl;
+//        cout << result << endl;
+//    };
+//
+//    formatery_calc["tabu_search"] = [&]() {
+//        int tabu_size = 1000;
+//        if (argc > 4) tabu_size = stoi(argv[4]);
+////        cout << nonogram << endl;
+////        cout << "-----------------------------------------------" << endl;
+//        auto result = tabu_search(generate_random_solution(nonogram), iterations, tabu_size);
+////        cout << evaluate(result) << endl;
+//        cout << result << endl;
+//    };
+//
+//    formatery_calc.at(calc_method)();
+//
+////  -----------------------check_random_neighbors-----------------------
+////    for (auto neighbour: generate_random_neighbours(nonogram)) {
+////        cout << " ------------------------------" << endl;
+////        cout << evaluate(neighbour) << endl;
+////        cout << neighbour << endl;
+////    }
+//
+////  -----------------------check_neighbors-----------------------
+////    for (auto neighbour: generate_neighbours(nonogram)) {
+////        cout << " ------------------------------" << endl;
+////        cout << evaluate(neighbour) << endl;
+////        cout << neighbour << endl;
+////    }
+//
+////    cout << "----------------------------------------" << endl;
+////    cout <<  generate_random_solution(nonogram) << endl;
+//
+//
+////    cout << evaluate(nonogram) << endl;
+////    cout << nonogram << endl;
+//
+//    return 0;
+//}
+
 int main(int argc, char **argv) {
     using namespace std;
+//    using namespace tp::args;
 
-    map<string, nonogram_t> formatery_puzzle;
+//    auto help = arg(argc, argv, "help", false);
+//    auto method = arg(argc, argv, "method", std::string("tabu_search"),
+//                      "Opt. method. Available are: brute_force tabu_search "
+//                      "random_probe hill_climb_det.");
+//    auto iterations =
+//            arg(argc, argv, "iterations", 100, "Maximal number of iterations.");
+//    auto do_chart = arg(argc, argv, "do_chart", false, "Show chart.");
+//    auto print_input =
+//            arg(argc, argv, "print_input", false, "Show what is the input problem.");
+//    auto print_result =
+//            arg(argc, argv, "print_result", false, "Show the result.");
+//    auto print_result_eval = arg(argc, argv, "print_result_eval", false,
+//                                 "Show the evaluation result.");
+//    if (help) {
+//        std::cout << "help screen.." << std::endl;
+//        args_info(std::cout);
+//        return 0;
+//    }
 
-    formatery_puzzle["nonogram1"] = {
+    nonogram_t nonogram0 = {
+            3,
+            3,
+            {
+                    0, 0, 0,
+                    0, 0, 0,
+                    0, 0, 0},
+            2,
+            1,
+            {
+                    0, 0, 2, 1, 2,
+                    0, 2, 0, 0, 0,
+                    1, 1, 0, 0, 0,
+                    0, 1, 0, 0, 0}};
+
+    nonogram_t nonogram1 = {
             5,
             5,
             {
@@ -330,147 +553,32 @@ int main(int argc, char **argv) {
                     0, 0, 1, 0, 0, 0, 0, 0,
                     0, 0, 3, 0, 0, 0, 0, 0,
                     0, 0, 3, 0, 0, 0, 0, 0,
-                    0, 0, 3, 0, 0, 0, 0, 0}
+                    0, 0, 3, 0, 0, 0, 0, 0}};
 
-    };
-    formatery_puzzle["nonogram0"] = {
-            3,
-            3,
-            {
-                    0, 0, 0,
-                    0, 0, 0,
-                    0, 0, 0},
-            2,
-            1,
-            {
-                    0, 0, 2, 1, 2,
-                    0, 2, 0, 0, 0,
-                    1, 1, 0, 0, 0,
-                    0, 1, 0, 0, 0
-            }
-
-    };
-    formatery_puzzle["nonogram_solution"] = {
-            5,
-            5,
-            {
-                    -1, 0, -1, 0, -1,
-                    -1, 0, 0, 0, 0,
-                    -1, -1, -1, 0, 0,
-                    0, -1, -1, -1, 0,
-                    0, -1, -1, -1, 0,},
-            3,
-            2,
-            {
-                    0, 0, 0, 0, 0, 1, 0, 0,
-                    0, 0, 0, 3, 3, 3, 2, 1,
-                    1, 1, 1, 0, 0, 0, 0, 0,
-                    0, 0, 1, 0, 0, 0, 0, 0,
-                    0, 0, 3, 0, 0, 0, 0, 0,
-                    0, 0, 3, 0, 0, 0, 0, 0,
-                    0, 0, 3, 0, 0, 0, 0, 0}
-
-    };
-    formatery_puzzle["nonogram_wrong"] = {
-            5,
-            5,
-            {
-                    0, 0, 0, 0, -1,
-                    0, 0, -1, 0, 0,
-                    -1, -1, 0, -1, 0,
-                    -1, -1, -1, 0, 0,
-                    -1, -1, -1, 0, 0,},
-            3,
-            2,
-            {
-                    0, 0, 0, 0, 0, 1, 0, 0,
-                    0, 0, 0, 3, 3, 3, 2, 1,
-                    1, 1, 1, 0, 0, 0, 0, 0,
-                    0, 0, 1, 0, 0, 0, 0, 0,
-                    0, 0, 3, 0, 0, 0, 0, 0,
-                    0, 0, 3, 0, 0, 0, 0, 0,
-                    0, 0, 3, 0, 0, 0, 0, 0}
-
-    };
-    map<string, function<void()>> formatery_calc;
-
-    string calc_method = argv[1];
+    string method = argv[1];
     int iterations = stoi(argv[2]);
+    string nonogram = argv[3];
+    string chart = argv[4];
+    bool do_chart = false;
+    if (chart == "true") do_chart = true;
 
-    auto nonogram = formatery_puzzle.at(argv[3]);
-//    auto nonogram = generate_random_solution(nonogram);
-
-    formatery_calc["brute_force"] = [&]() {
-        cout << nonogram << endl;
-        int n = 0;
-        while (next_solution(nonogram)) {
-            if ((n % 10000) == 0) {
-                cout << n << " : " << evaluate(nonogram) << endl << nonogram << endl;
-            }
-            if (evaluate(nonogram) == 0) {
-                cout << nonogram << endl;
-                break;
-            }
-            n++;
-        }
+    map<string, nonogram_t> nonogram_map = {
+            {"nonogram0", nonogram0},
+            {"nonogram1", nonogram1},
     };
 
-    formatery_calc["random_sampling"] = [&]() {
-        cout << nonogram << endl;
-        cout << "-----------------------------------------------" << endl;
-        auto result = random_sampling(nonogram, iterations);
-        cout << evaluate(result) << endl;
+    map<string, function<nonogram_t(nonogram_t, int, bool) >> methods = {
+            {"brute_force", brute_force},
+            {"random_sampling", random_sampling},
+//            {"hill_climb_det", hill_climb_det},
+//            {"tabu_search", [&](nonogram_t p, int n, bool d) { return tabu_search(p, n, d, stoi(argv[5]));}},
+//            {"annealing",      [](nonogram_t p, int n, bool d) { return annealing(p, n, d); }}
+    };
+
+    nonogram_t result = methods.at(method)(nonogram_map.at(nonogram), iterations, do_chart);
+//    if (print_result)
         cout << result << endl;
-    };
-
-    formatery_calc["hill_climb_det"] = [&]() {
-        cout << nonogram << endl;
-        cout << "-----------------------------------------------" << endl;
-        auto result = hill_climb_det(generate_random_solution(nonogram), iterations);
+//    if (print_result_eval)
         cout << evaluate(result) << endl;
-        cout << result << endl;
-    };
 
-    formatery_calc["hill_climb_rand"] = [&]() {
-        cout << nonogram << endl;
-        cout << "-----------------------------------------------" << endl;
-        auto result = hill_climb_rand(generate_random_solution(nonogram), iterations);
-        cout << evaluate(result) << endl;
-        cout << result << endl;
-    };
-
-    formatery_calc["tabu_search"] = [&]() {
-        int tabu_size = 100;
-        if (argc > 4) tabu_size = stoi(argv[4]);
-        cout << nonogram << endl;
-        cout << "-----------------------------------------------" << endl;
-        auto result = tabu_search(generate_random_solution(nonogram), iterations, tabu_size);
-        cout << evaluate(result) << endl;
-        cout << result << endl;
-    };
-
-    formatery_calc.at(calc_method)();
-
-//  -----------------------check_random_neighbors-----------------------
-//    for (auto neighbour: generate_random_neighbours(nonogram)) {
-//        cout << " ------------------------------" << endl;
-//        cout << evaluate(neighbour) << endl;
-//        cout << neighbour << endl;
-//    }
-
-//  -----------------------check_neighbors-----------------------
-//    for (auto neighbour: generate_neighbours(nonogram)) {
-//        cout << " ------------------------------" << endl;
-//        cout << evaluate(neighbour) << endl;
-//        cout << neighbour << endl;
-//    }
-
-//    cout << "----------------------------------------" << endl;
-//    cout <<  generate_random_solution(nonogram) << endl;
-
-
-//    cout << evaluate(nonogram) << endl;
-//    cout << nonogram << endl;
-
-    return 0;
 }
