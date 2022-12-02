@@ -235,7 +235,21 @@ nonogram_t generate_random_solution(nonogram_t &p) {
     return rand_sol;
 }
 
-nonogram_t brute_force(nonogram_t nonogram_a, int iterations, bool show_progress = false, bool show_iterations = false) {
+void print_f(std::string progress, std::string iter, bool show_progress = false, bool show_iterations = false) {
+    if (show_iterations) {
+        c_out << iter + "  ";
+        std::cout << iter + "  ";
+    }
+    if (show_progress) {
+        c_out << progress;
+        std::cout << progress;
+        c_out << std::endl;
+        std::cout << std::endl;
+    }
+}
+
+nonogram_t
+brute_force(nonogram_t nonogram_a, int iterations, bool show_progress = false, bool show_iterations = false) {
     auto nonogram = generate_random_solution(nonogram_a);
     auto best_so_far = nonogram;
     int best_value = evaluate(best_so_far);
@@ -250,16 +264,13 @@ nonogram_t brute_force(nonogram_t nonogram_a, int iterations, bool show_progress
         std::string progress = std::to_string(nonogram_value) + "  " + std::to_string(best_value);
         std::string iter = std::to_string(i + 1);
 
-        if (show_iterations || show_progress) {
-            if (show_iterations) std::cout << iter + "  ";
-            if (show_progress) std::cout << progress;
-            std::cout << std::endl;
-        }
+        if (show_iterations || show_progress) print_f(progress, iter, show_progress, show_iterations);
     }
     return best_so_far;
 }
 
-nonogram_t random_sampling(nonogram_t nonogram_a, int iterations, bool show_progress = false, bool show_iterations = false) {
+nonogram_t
+random_sampling(nonogram_t nonogram_a, int iterations, bool show_progress = false, bool show_iterations = false) {
     int calls = 0;
     auto nonogram = generate_random_solution(nonogram_a);
     auto best_so_far = nonogram;
@@ -276,16 +287,13 @@ nonogram_t random_sampling(nonogram_t nonogram_a, int iterations, bool show_prog
         std::string progress = std::to_string(nonogram_value) + "  " + std::to_string(best_value);
         std::string iter = std::to_string(i + 1);
 
-        if (show_iterations || show_progress) {
-            if (show_iterations) std::cout << iter + "  ";
-            if (show_progress) std::cout << progress;
-            std::cout << std::endl;
-        }
+        if (show_iterations || show_progress) print_f(progress, iter, show_progress, show_iterations);
     }
     return best_so_far;
 }
 
-nonogram_t hill_climb_det(nonogram_t start_nonogram, int iterations, bool show_progress = false, bool show_iterations = false) {
+nonogram_t
+hill_climb_det(nonogram_t start_nonogram, int iterations, bool show_progress = false, bool show_iterations = false) {
     int calls = 0;
     nonogram_t best_p = start_nonogram;
     int best_value = evaluate(best_p);
@@ -313,16 +321,14 @@ nonogram_t hill_climb_det(nonogram_t start_nonogram, int iterations, bool show_p
         std::string progress = std::to_string(nonogram_value) + "  " + std::to_string(best_value);
         std::string iter = std::to_string(iteration + 1);
 
-        if (show_iterations || show_progress) {
-            if (show_iterations) std::cout << iter + "  ";
-            if (show_progress) std::cout << progress;
-            std::cout << std::endl;
-        }
+        if (show_iterations || show_progress) print_f(progress, iter, show_progress, show_iterations);
     }
     return best_p;
 }
 
-nonogram_t hill_climb_rand(nonogram_t start_nonogram, int iterations, bool show_progress = false, bool show_iterations = false) {\
+nonogram_t
+hill_climb_rand(nonogram_t start_nonogram, int iterations, bool show_progress = false, bool show_iterations = false) {
+    \
     int calls = 0;
     nonogram_t best_p = start_nonogram;
     int best_value = evaluate(best_p);
@@ -348,11 +354,7 @@ nonogram_t hill_climb_rand(nonogram_t start_nonogram, int iterations, bool show_
         std::string progress = std::to_string(nonogram_value) + "  " + std::to_string(best_value);
         std::string iter = std::to_string(iteration + 1);
 
-        if (show_iterations || show_progress) {
-            if (show_iterations) std::cout << iter + "  ";
-            if (show_progress) std::cout << progress;
-            std::cout << std::endl;
-        }
+        if (show_iterations || show_progress) print_f(progress, iter, show_progress, show_iterations);
     }
     return best_p;
 }
@@ -366,13 +368,15 @@ bool operator==(nonogram_t l, nonogram_t r) {
     return true;
 }
 
-nonogram_t tabu_search(nonogram_t nonogram, int iterations, bool show_progress = false, bool show_iterations = false, int tabu_size = 1000) {
+nonogram_t tabu_search(nonogram_t nonogram, int iterations, bool show_progress = false, bool show_iterations = false,
+                       int tabu_size = 1000) {
     int calls = 0;
     using namespace std;
     list<nonogram_t> tabu_list;
     tabu_list.push_back(nonogram);
     auto best_so_far = tabu_list.back();
-    int best_value = evaluate(best_so_far);    for (int n = 0; n < iterations; n++) {
+    int best_value = evaluate(best_so_far);
+    for (int n = 0; n < iterations; n++) {
         vector<nonogram_t> neighbours;
         for (auto e: generate_neighbours(tabu_list.back())) {
             bool found = (std::find(tabu_list.begin(), tabu_list.end(), e) != tabu_list.end());
@@ -395,11 +399,7 @@ nonogram_t tabu_search(nonogram_t nonogram, int iterations, bool show_progress =
         std::string progress = std::to_string(nonogram_value) + "  " + std::to_string(best_value);
         std::string iter = std::to_string(n + 1);
 
-        if (show_iterations || show_progress) {
-            if (show_iterations) std::cout << iter + "  ";
-            if (show_progress) std::cout << progress;
-            std::cout << std::endl;
-        }
+        if (show_iterations || show_progress) print_f(progress, iter, show_progress, show_iterations);
 
         if (tabu_list.size() > tabu_size) tabu_list.pop_front();
     }
@@ -453,8 +453,8 @@ int main(int argc, char **argv) {
             arg(argc, argv, "iterations", 100, "Maximal number of iterations.");
     auto nonogram = arg(argc, argv, "nonogram", "nonogram1", "Board.");
     auto do_chart = arg(argc, argv, "do_chart", false, "Show chart.");
-    auto show_iterations = arg(argc, argv, "show_iter", false, "Show iterations.");
-    auto show_calls = arg(argc, argv, "show_iter", false, "Show function calls.");
+    auto show_iter = arg(argc, argv, "show_iter", false, "Show iterations.");
+    auto show_calls = arg(argc, argv, "show_calls", false, "Show function calls.");
     auto tabu_size = arg(argc, argv, "tabu_size", 1000, "Maximal number tabu list.");
     auto print_result =
             arg(argc, argv, "print_result", false, "Show the result.");
@@ -474,15 +474,15 @@ int main(int argc, char **argv) {
     };
 
     map<string, function<nonogram_t(nonogram_t, int, bool, bool) >> methods = {
-            {"brute_force", brute_force},
-            {"random_probe", random_sampling},
+            {"brute_force",    brute_force},
+            {"random_probe",   random_sampling},
             {"hill_climb_det", hill_climb_det},
-            {"tabu_search", [&](nonogram_t p, int n, bool d, bool e) { return tabu_search(p, n, d, e, tabu_size);}},
+            {"tabu_search",    [&](nonogram_t p, int n, bool d, bool e) { return tabu_search(p, n, d, e, tabu_size); }},
 //            {"annealing",      [](nonogram_t p, int n, bool d) { return annealing(p, n, d); }}
     };
 
     clock_t start = clock();
-    nonogram_t result = methods.at(method)(nonogram_map.at(nonogram), iterations, do_chart, show_iterations);
+    nonogram_t result = methods.at(method)(nonogram_map.at(nonogram), iterations, do_chart, show_iter);
     long algorithm_time = clock() - start;
 
     if (print_result)
