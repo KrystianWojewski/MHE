@@ -8,7 +8,7 @@ struct nonogram_t {
     int width;
     int height;
     std::vector<int> board;
-    int left_parmas_width;
+    int left_params_width;
     int top_params_height;
     std::vector<int> params_board;
 
@@ -18,11 +18,11 @@ struct nonogram_t {
     }
 
     int get_from_param(const int x, const int y) const {
-        if ((x < 0) || (x >= width + left_parmas_width) || (y < 0) || (y >= height + top_params_height)) {
+        if ((x < 0) || (x >= width + left_params_width) || (y < 0) || (y >= height + top_params_height)) {
             throw std::invalid_argument("out of board");
-        } else if ((x >= left_parmas_width && y < top_params_height) ||
-                   (x < left_parmas_width && y >= top_params_height)) {
-            return params_board.at(y * (width + left_parmas_width) + x);
+        } else if ((x >= left_params_width && y < top_params_height) ||
+                   (x < left_params_width && y >= top_params_height)) {
+            return params_board.at(y * (width + left_params_width) + x);
         }
         return 0;
     }

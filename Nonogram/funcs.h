@@ -18,5 +18,7 @@ nonogram_t random_sampling(nonogram_t nonogram_a, int iterations, bool show_prog
 nonogram_t hill_climb_det(nonogram_t start_nonogram, int iterations, bool show_progress, bool show_iterations);
 nonogram_t hill_climb_rand(nonogram_t start_nonogram, int iterations, bool show_progress, bool show_iterations);
 nonogram_t tabu_search(nonogram_t nonogram, int iterations, bool show_progress, bool show_iterations, int tabu_size);
+nonogram_t annealing(nonogram_t &nonogram, int iterations, bool show_progress, bool show_iterations,
+                     std::function<double(int)> T = [](int k){return 1000.0/(k+1);});
 
 #endif

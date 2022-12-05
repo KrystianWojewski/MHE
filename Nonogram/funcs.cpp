@@ -1,6 +1,7 @@
 #include <fstream>
 #include <random>
 #include <list>
+#include <functional>
 #include "funcs.h"
 
 std::random_device rd;
@@ -19,13 +20,13 @@ int evaluate_puzzle(int x, int y, const nonogram_t &nonogram) {
         int error = 0;
         int py = cy, px = cx;
         try {
-            while ((py == 0 && px >= nonogram.left_parmas_width) || (px == 0 && py >= nonogram.top_params_height)) {
+            while ((py == 0 && px >= nonogram.left_params_width) || (px == 0 && py >= nonogram.top_params_height)) {
 
                 if (nonogram.get_from_param(cx, cy) > 0) {
                     actual_params.push_back(nonogram.get_from_param(cx, cy));
                 }
-                if (cx >= nonogram.left_parmas_width && cy >= nonogram.top_params_height) {
-                    if (nonogram.get_from_board(cx - nonogram.left_parmas_width, cy - nonogram.top_params_height) ==
+                if (cx >= nonogram.left_params_width && cy >= nonogram.top_params_height) {
+                    if (nonogram.get_from_board(cx - nonogram.left_params_width, cy - nonogram.top_params_height) ==
                         -1) {
                         sum++;
                     }
@@ -33,11 +34,11 @@ int evaluate_puzzle(int x, int y, const nonogram_t &nonogram) {
                         result.push_back(sum);
                         sum = 0;
                     }
-                    if (dx == 1 && cx == nonogram.width + nonogram.left_parmas_width - 1 && sum > 0) {
+                    if (dx == 1 && cx == nonogram.width + nonogram.left_params_width - 1 && sum > 0) {
                         result.push_back(sum);
                         sum = 0;
                     }
-                    if (nonogram.get_from_board(cx - nonogram.left_parmas_width, cy - nonogram.top_params_height) ==
+                    if (nonogram.get_from_board(cx - nonogram.left_params_width, cy - nonogram.top_params_height) ==
                         0 && sum > 0) {
                         result.push_back(sum);
                         sum = 0;
@@ -75,7 +76,7 @@ int evaluate_puzzle(int x, int y, const nonogram_t &nonogram) {
     };
 
     int sum = 0;
-    if (y == 0 && x >= nonogram.left_parmas_width) {
+    if (y == 0 && x >= nonogram.left_params_width) {
         int dx = 0, dy = 1;
         sum += func(sum, x, y, dx, dy, nonogram);
     }
@@ -89,7 +90,7 @@ int evaluate_puzzle(int x, int y, const nonogram_t &nonogram) {
 int count_inconsistent(const nonogram_t &nonogram) {
     int error = 0;
     for (int y = 0; y < nonogram.height + nonogram.top_params_height; y++)
-        for (int x = 0; x < nonogram.width + nonogram.left_parmas_width; x++) {
+        for (int x = 0; x < nonogram.width + nonogram.left_params_width; x++) {
             if (nonogram.get_from_param(x, y) >= 0) {
                 int count = evaluate_puzzle(x, y, nonogram);
                 error += count;
@@ -155,6 +156,20 @@ std::vector<nonogram_t> generate_random_neighbours(const nonogram_t &p) {
         }
     }
     return neighbours;
+}
+
+nonogram_t generate_neighbor_almost_normal(nonogram_t &p) {
+    using namespace std;
+    nonogram_t nonogram = p;
+    std::normal_distribution norm;
+    std::uniform_int_distribution<int> int_distr(0, nonogram.board.size() - 1);
+    double how_may_change = norm(mt);
+    auto new_board = nonogram;
+    for (int i = 0; i <= how_may_change; i++) {
+        int n = int_distr(mt);
+        if (new_board.board[n] <= 0) new_board.board[n] = -1 - new_board.board[n];
+    }
+    return new_board;
 }
 
 nonogram_t generate_random_solution(nonogram_t &p) {
@@ -225,7 +240,7 @@ nonogram_t random_sampling(nonogram_t nonogram_a, int iterations, bool show_prog
 }
 
 nonogram_t hill_climb_det(nonogram_t start_nonogram, int iterations, bool show_progress = false, bool show_iterations = false) {
-    nonogram_t best_p = start_nonogram;
+    nonogram_t best_p = generate_random_solution(start_nonogram);
     int best_value = evaluate(best_p);
     for (int iteration = 0; iteration < iterations; iteration++) {
         auto close_points = generate_neighbours(best_p);
@@ -257,7 +272,7 @@ nonogram_t hill_climb_det(nonogram_t start_nonogram, int iterations, bool show_p
 }
 
 nonogram_t hill_climb_rand(nonogram_t start_nonogram, int iterations, bool show_progress = false, bool show_iterations = false) {
-    nonogram_t best_p = start_nonogram;
+    nonogram_t best_p = generate_random_solution(start_nonogram);
     int best_value = evaluate(best_p);
     for (int iteration = 0; iteration < iterations; iteration++) {
         auto close_points = generate_random_neighbours(best_p);
@@ -289,7 +304,7 @@ nonogram_t hill_climb_rand(nonogram_t start_nonogram, int iterations, bool show_
 nonogram_t tabu_search(nonogram_t nonogram, int iterations, bool show_progress = false, bool show_iterations = false, int tabu_size = 1000) {
     using namespace std;
     list<nonogram_t> tabu_list;
-    tabu_list.push_back(nonogram);
+    tabu_list.push_back(generate_random_solution(nonogram));
     auto best_so_far = tabu_list.back();
     int best_value = evaluate(best_so_far);
     for (int n = 0; n < iterations; n++) {
@@ -318,6 +333,30 @@ nonogram_t tabu_search(nonogram_t nonogram, int iterations, bool show_progress =
         if (show_iterations || show_progress) print_f(progress, iter, show_progress, show_iterations);
 
         if (tabu_list.size() > tabu_size) tabu_list.pop_front();
+    }
+    return best_so_far;
+}
+
+nonogram_t annealing(nonogram_t &nonogram, int iterations, bool show_progress = false, bool show_iterations = false,
+                     std::function<double(int)> T) {
+    using namespace std;
+    auto s = generate_random_solution(nonogram);
+    auto best_so_far = s;
+    cerr << "annealing..." << endl;
+    for (int k = 0; k < iterations; k++) {
+        if (show_progress)
+            cout << k << " " << evaluate(s) << " " << evaluate(best_so_far) << endl;
+        auto t = generate_neighbor_almost_normal(s);
+        if (evaluate(t) < evaluate(s)) {
+            s = t;
+            if (evaluate(s) < evaluate(best_so_far)) best_so_far = s;
+        } else {
+            uniform_real_distribution<double> u(0.0,1.0);
+            double v = exp(-abs(evaluate(t) - evaluate(s))/T(k));
+            if (u(mt) < v) {
+                s = t;
+            }
+        }
     }
     return best_so_far;
 }
