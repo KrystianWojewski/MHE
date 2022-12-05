@@ -158,20 +158,6 @@ std::vector<nonogram_t> generate_random_neighbours(const nonogram_t &p) {
     return neighbours;
 }
 
-nonogram_t generate_neighbor_almost_normal(nonogram_t &p) {
-    using namespace std;
-    nonogram_t nonogram = p;
-    std::normal_distribution norm;
-    std::uniform_int_distribution<int> int_distr(0, nonogram.board.size() - 1);
-    double how_may_change = norm(mt);
-    auto new_board = nonogram;
-    for (int i = 0; i <= how_may_change; i++) {
-        int n = int_distr(mt);
-        if (new_board.board[n] <= 0) new_board.board[n] = -1 - new_board.board[n];
-    }
-    return new_board;
-}
-
 nonogram_t generate_random_solution(nonogram_t &p) {
     using namespace std;
     uniform_int_distribution<int> distr(-1, 0);
@@ -342,11 +328,23 @@ nonogram_t annealing(nonogram_t &nonogram, int iterations, bool show_progress = 
     using namespace std;
     auto s = generate_random_solution(nonogram);
     auto best_so_far = s;
-    cerr << "annealing..." << endl;
     for (int k = 0; k < iterations; k++) {
-        if (show_progress)
-            cout << k << " " << evaluate(s) << " " << evaluate(best_so_far) << endl;
-        auto t = generate_neighbor_almost_normal(s);
+//        if (show_progress)
+//            cout << k << " " << evaluate(s) << " " << evaluate(best_so_far) << endl;
+
+        auto generated_neighbours = generate_neighbours(s);
+
+        uniform_int_distribution<int> dist(0, (generated_neighbours.size()-1));
+        auto rand = dist(mt);
+        auto t = generated_neighbours[rand];
+
+//        auto t = generated_neighbours[0];
+//        for (int i = 1; i< generated_neighbours.size(); i++){
+//            if (evaluate(t) >= evaluate(generated_neighbours[i])) {
+//                t = generated_neighbours[i];
+//            }
+//        }
+
         if (evaluate(t) < evaluate(s)) {
             s = t;
             if (evaluate(s) < evaluate(best_so_far)) best_so_far = s;
@@ -357,6 +355,14 @@ nonogram_t annealing(nonogram_t &nonogram, int iterations, bool show_progress = 
                 s = t;
             }
         }
+
+        int nonogram_value = evaluate(s);
+        int best_value = evaluate(best_so_far);
+
+        std::string progress = std::to_string(nonogram_value) + "  " + std::to_string(best_value);
+        std::string iter = std::to_string(k + 1);
+
+        if (show_iterations || show_progress) print_f(progress, iter, show_progress, show_iterations);
     }
     return best_so_far;
 }

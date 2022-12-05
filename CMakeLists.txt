@@ -18,6 +18,7 @@ include_directories("${PROJECT_SOURCE_DIR}/src")
 file(GLOB_RECURSE mhe_SOURCES "Nonogram/Nonogram.cpp")
 
 add_executable(mhe ${mhe_SOURCES} Nonogram/struct.h Nonogram/struct.cpp Nonogram/funcs.h Nonogram/funcs.cpp)
+#add_executable(mhe ${mhe_SOURCES})
 
 add_custom_command(TARGET mhe PRE_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
