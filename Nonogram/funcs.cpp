@@ -200,6 +200,7 @@ nonogram_t brute_force(nonogram_t nonogram_a, int iterations, bool show_progress
         std::string iter = std::to_string(i + 1);
 
         if (show_iterations || show_progress) print_f(progress, iter, show_progress, show_iterations);
+        if (best_value == 0) break;
     }
     return best_so_far;
 }
@@ -221,6 +222,7 @@ nonogram_t random_sampling(nonogram_t nonogram_a, int iterations, bool show_prog
         std::string iter = std::to_string(i + 1);
 
         if (show_iterations || show_progress) print_f(progress, iter, show_progress, show_iterations);
+        if (best_value == 0) break;
     }
     return best_so_far;
 }
@@ -244,6 +246,11 @@ nonogram_t hill_climb_det(nonogram_t start_nonogram, int iterations, bool show_p
         auto best_neighbour = best_neighbour_func();
 
         int nonogram_value = evaluate(best_neighbour);
+
+        if (nonogram_value == best_value) {
+            break;
+        }
+
         if (nonogram_value < best_value) {
             best_p = best_neighbour;
             best_value = evaluate(best_p);
@@ -253,6 +260,8 @@ nonogram_t hill_climb_det(nonogram_t start_nonogram, int iterations, bool show_p
         std::string iter = std::to_string(iteration + 1);
 
         if (show_iterations || show_progress) print_f(progress, iter, show_progress, show_iterations);
+        if (best_value == 0) break;
+
     }
     return best_p;
 }
@@ -283,6 +292,7 @@ nonogram_t hill_climb_rand(nonogram_t start_nonogram, int iterations, bool show_
         std::string iter = std::to_string(iteration + 1);
 
         if (show_iterations || show_progress) print_f(progress, iter, show_progress, show_iterations);
+        if (best_value == 0) break;
     }
     return best_p;
 }
@@ -319,6 +329,7 @@ nonogram_t tabu_search(nonogram_t nonogram, int iterations, bool show_progress =
         if (show_iterations || show_progress) print_f(progress, iter, show_progress, show_iterations);
 
         if (tabu_list.size() > tabu_size) tabu_list.pop_front();
+        if (best_value == 0) break;
     }
     return best_so_far;
 }
@@ -329,21 +340,12 @@ nonogram_t annealing(nonogram_t &nonogram, int iterations, bool show_progress = 
     auto s = generate_random_solution(nonogram);
     auto best_so_far = s;
     for (int k = 0; k < iterations; k++) {
-//        if (show_progress)
-//            cout << k << " " << evaluate(s) << " " << evaluate(best_so_far) << endl;
 
         auto generated_neighbours = generate_neighbours(s);
 
         uniform_int_distribution<int> dist(0, (generated_neighbours.size()-1));
         auto rand = dist(mt);
         auto t = generated_neighbours[rand];
-
-//        auto t = generated_neighbours[0];
-//        for (int i = 1; i< generated_neighbours.size(); i++){
-//            if (evaluate(t) >= evaluate(generated_neighbours[i])) {
-//                t = generated_neighbours[i];
-//            }
-//        }
 
         if (evaluate(t) < evaluate(s)) {
             s = t;
@@ -363,6 +365,7 @@ nonogram_t annealing(nonogram_t &nonogram, int iterations, bool show_progress = 
         std::string iter = std::to_string(k + 1);
 
         if (show_iterations || show_progress) print_f(progress, iter, show_progress, show_iterations);
+        if (best_value == 0) break;
     }
     return best_so_far;
 }
