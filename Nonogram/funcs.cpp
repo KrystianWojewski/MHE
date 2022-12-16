@@ -369,3 +369,23 @@ nonogram_t annealing(nonogram_t &nonogram, int iterations, bool show_progress = 
     }
     return best_so_far;
 }
+
+nonogram_t genetic_algorithm () {
+        vector<chromosome_t> population = init_population();
+        int iteration = 0;
+#pragma omp parallel for
+        for (size_t i = 0; i < population.size(); i++)
+        population[i] = fitness(population[i]);
+        while (term_condition(iteration, population)) {
+            auto parents = selection(population);
+            auto offspring = crossover(parents);
+            offspring = mutation(offspring);
+            population = offspring;
+#pragma omp parallel for
+            for (size_t i = 0; i < population.size(); i++)
+                population[i] = fitness(population[i]);
+
+            iteration++;
+        }
+        return population;
+}

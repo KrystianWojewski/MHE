@@ -15,41 +15,6 @@ int main(int argc, char **argv) {
     using namespace std;
     using namespace tp::args;
 
-//    nonogram_t nonogram0 = {
-//            3,
-//            3,
-//            {
-//                    0, 0, 0,
-//                    0, 0, 0,
-//                    0, 0, 0},
-//            2,
-//            1,
-//            {
-//                    0, 0, 2, 1, 2,
-//                    0, 2, 0, 0, 0,
-//                    1, 1, 0, 0, 0,
-//                    0, 1, 0, 0, 0}};
-//
-//    nonogram_t nonogram1 = {
-//            5,
-//            5,
-//            {
-//                    0, 0, 0, 0, 0,
-//                    0, 0, 0, 0, 0,
-//                    0, 0, 0, 0, 0,
-//                    0, 0, 0, 0, 0,
-//                    0, 0, 0, 0, 0},
-//            3,
-//            2,
-//            {
-//                    0, 0, 0, 0, 0, 1, 0, 0,
-//                    0, 0, 0, 3, 3, 3, 2, 1,
-//                    1, 1, 1, 0, 0, 0, 0, 0,
-//                    0, 0, 1, 0, 0, 0, 0, 0,
-//                    0, 0, 3, 0, 0, 0, 0, 0,
-//                    0, 0, 3, 0, 0, 0, 0, 0,
-//                    0, 0, 3, 0, 0, 0, 0, 0}};
-
     auto help = arg(argc, argv, "help", false);
     auto method = arg(argc, argv, "method", std::string("tabu_search"),
                       "Opt. method. Available are: brute_force tabu_search "
