@@ -26,6 +26,9 @@ int main(int argc, char **argv) {
     auto show_iter = arg(argc, argv, "show_iter", false, "Show iterations.");
     auto show_calls = arg(argc, argv, "show_calls", false, "Show function calls.");
     auto tabu_size = arg(argc, argv, "tabu_size", 1000, "Maximal number tabu list.");
+    auto pop_size = arg(argc, argv, "pop_size", 10, "Population size.");
+    auto p_crossover = arg(argc, argv, "crossover", 0.1, "Crossover probability.");
+    auto p_mutation = arg(argc, argv, "mutation", 0.1, "Mutation probability.");
     auto print_result =
             arg(argc, argv, "print_result", false, "Show the result.");
     auto print_result_eval = arg(argc, argv, "print_result_eval", false,
@@ -62,7 +65,8 @@ int main(int argc, char **argv) {
             {"random_probe",   random_sampling},
             {"hill_climb_det", hill_climb_det},
             {"tabu_search",    [&](nonogram_t p, int n, bool d, bool e) { return tabu_search(p, n, d, e,  tabu_size); }},
-            {"annealing",      [](nonogram_t p, int n, bool d, bool e) { return annealing(p, n, d, e); }}
+            {"annealing",      [](nonogram_t p, int n, bool d, bool e) { return annealing(p, n, d, e); }},
+            {"genetic", [&](nonogram_t p, int n, bool d, bool e) { return genetic_algorithm(p,n,d,e, pop_size, p_crossover, p_mutation);}},
     };
 
     clock_t start = clock();

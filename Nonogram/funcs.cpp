@@ -184,7 +184,8 @@ void print_f(std::string progress, std::string iter, bool show_progress = false,
     }
 }
 
-nonogram_t brute_force(nonogram_t nonogram_a, int iterations, bool show_progress = false, bool show_iterations = false) {
+nonogram_t
+brute_force(nonogram_t nonogram_a, int iterations, bool show_progress = false, bool show_iterations = false) {
     auto nonogram = generate_random_solution(nonogram_a);
     auto best_so_far = nonogram;
     int best_value = evaluate(best_so_far);
@@ -205,7 +206,8 @@ nonogram_t brute_force(nonogram_t nonogram_a, int iterations, bool show_progress
     return best_so_far;
 }
 
-nonogram_t random_sampling(nonogram_t nonogram_a, int iterations, bool show_progress = false, bool show_iterations = false) {
+nonogram_t
+random_sampling(nonogram_t nonogram_a, int iterations, bool show_progress = false, bool show_iterations = false) {
     auto nonogram = generate_random_solution(nonogram_a);
     auto best_so_far = nonogram;
     int best_value = evaluate(best_so_far);
@@ -227,7 +229,8 @@ nonogram_t random_sampling(nonogram_t nonogram_a, int iterations, bool show_prog
     return best_so_far;
 }
 
-nonogram_t hill_climb_det(nonogram_t start_nonogram, int iterations, bool show_progress = false, bool show_iterations = false) {
+nonogram_t
+hill_climb_det(nonogram_t start_nonogram, int iterations, bool show_progress = false, bool show_iterations = false) {
     nonogram_t best_p = generate_random_solution(start_nonogram);
     int best_value = evaluate(best_p);
     for (int iteration = 0; iteration < iterations; iteration++) {
@@ -266,7 +269,8 @@ nonogram_t hill_climb_det(nonogram_t start_nonogram, int iterations, bool show_p
     return best_p;
 }
 
-nonogram_t hill_climb_rand(nonogram_t start_nonogram, int iterations, bool show_progress = false, bool show_iterations = false) {
+nonogram_t
+hill_climb_rand(nonogram_t start_nonogram, int iterations, bool show_progress = false, bool show_iterations = false) {
     nonogram_t best_p = generate_random_solution(start_nonogram);
     int best_value = evaluate(best_p);
     for (int iteration = 0; iteration < iterations; iteration++) {
@@ -297,7 +301,8 @@ nonogram_t hill_climb_rand(nonogram_t start_nonogram, int iterations, bool show_
     return best_p;
 }
 
-nonogram_t tabu_search(nonogram_t nonogram, int iterations, bool show_progress = false, bool show_iterations = false, int tabu_size = 1000) {
+nonogram_t tabu_search(nonogram_t nonogram, int iterations, bool show_progress = false, bool show_iterations = false,
+                       int tabu_size = 1000) {
     using namespace std;
     list<nonogram_t> tabu_list;
     tabu_list.push_back(generate_random_solution(nonogram));
@@ -343,7 +348,7 @@ nonogram_t annealing(nonogram_t &nonogram, int iterations, bool show_progress = 
 
         auto generated_neighbours = generate_neighbours(s);
 
-        uniform_int_distribution<int> dist(0, (generated_neighbours.size()-1));
+        uniform_int_distribution<int> dist(0, (generated_neighbours.size() - 1));
         auto rand = dist(mt);
         auto t = generated_neighbours[rand];
 
@@ -351,8 +356,8 @@ nonogram_t annealing(nonogram_t &nonogram, int iterations, bool show_progress = 
             s = t;
             if (evaluate(s) < evaluate(best_so_far)) best_so_far = s;
         } else {
-            uniform_real_distribution<double> u(0.0,1.0);
-            double v = exp(-abs(evaluate(t) - evaluate(s))/T(k));
+            uniform_real_distribution<double> u(0.0, 1.0);
+            double v = exp(-abs(evaluate(t) - evaluate(s)) / T(k));
             if (u(mt) < v) {
                 s = t;
             }
@@ -370,22 +375,73 @@ nonogram_t annealing(nonogram_t &nonogram, int iterations, bool show_progress = 
     return best_so_far;
 }
 
-nonogram_t genetic_algorithm () {
-        vector<chromosome_t> population = init_population();
-        int iteration = 0;
-#pragma omp parallel for
-        for (size_t i = 0; i < population.size(); i++)
-        population[i] = fitness(population[i]);
-        while (term_condition(iteration, population)) {
-            auto parents = selection(population);
-            auto offspring = crossover(parents);
-            offspring = mutation(offspring);
-            population = offspring;
-#pragma omp parallel for
-            for (size_t i = 0; i < population.size(); i++)
-                population[i] = fitness(population[i]);
+double fitness(const nonogram_t &nonogram) {
+    return 1.0 / (1.0 + evaluate(nonogram));
+}
 
-            iteration++;
+std::vector<int> selection(std::vector<double> pop_fit) {
+    std::uniform_int_distribution<int> distr(0, pop_fit.size() - 1);
+    std::vector<int> ret;
+    while (ret.size() < pop_fit.size()) {
+        int a = distr(mt), b = distr(mt);
+        ret.push_back((pop_fit[a] > pop_fit[b]) ? a : b);
+    }
+    return ret;
+}
+
+std::vector<nonogram_t> crossover(const std::vector<nonogram_t> &parents) {
+    using namespace std;
+    uniform_int_distribution<int> locus(0, parents.at(0).board.size() - 1);
+    int a = locus(mt);
+    auto children = parents;
+    for (int i = a; i < children[0].board.size(); i++) {
+        swap(children[0].board[i], children[1].board[i]);
+    }
+    return children;
+}
+
+nonogram_t mutation(const nonogram_t &parent) {
+    using namespace std;
+    uniform_int_distribution<int> locus(0, parent.board.size() - 1);
+    auto child = parent;
+    auto l = locus(mt);
+    child.board[l] = - 1 - child.board[l];
+    return child;
+}
+
+nonogram_t
+genetic_algorithm(nonogram_t &nonogram, int iterations, bool show_progress = false, bool show_iterations = false,
+                  int pop_size = 10, double p_crossover = 0.1, double p_mutation = 0.1) {
+
+    std::vector<nonogram_t> initial_population(pop_size);
+    std::generate(initial_population.begin(), initial_population.end(),
+                  [&]() { return generate_random_solution(nonogram); });
+
+    std::vector<nonogram_t> population = initial_population;
+    std::sort(population.begin(), population.end(), [](auto a, auto b) { return fitness(a) > fitness(b); });
+
+    for (int iteration = 0; iteration < iterations; iteration++) {
+        std::vector<double> fitnesses(pop_size);
+        std::transform(population.begin(), population.end(), fitnesses.begin(), [&](auto e) { return fitness(e); });
+        auto selected = selection(fitnesses);
+        std::vector<nonogram_t> new_population;
+        for (int i = 0; i < (pop_size - 1); i += 2) {
+            std::uniform_real_distribution<double> distr(0.0, 1.0);
+            std::vector<nonogram_t> c = {population.at(selected.at(i)),
+                                         population.at(selected.at(i + 1))};
+            if (distr(mt) > p_crossover) {
+                c = crossover(c);
+            }
+            for (auto &e: c) {
+                if (distr(mt) > p_mutation)
+                    e = mutation(e);
+            }
+            new_population.push_back(c.at(0));
+            new_population.push_back(c.at(1));
         }
-        return population;
+        population = new_population;
+    }
+    std::cout << std::endl;
+    std::sort(population.begin(), population.end(), [](auto a, auto b) { return fitness(a) > fitness(b); });
+    return population.at(0);
 }

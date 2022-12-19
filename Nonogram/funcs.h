@@ -20,5 +20,7 @@ nonogram_t hill_climb_rand(nonogram_t start_nonogram, int iterations, bool show_
 nonogram_t tabu_search(nonogram_t nonogram, int iterations, bool show_progress, bool show_iterations, int tabu_size);
 nonogram_t annealing(nonogram_t &nonogram, int iterations, bool show_progress, bool show_iterations,
                      std::function<double(int)> T = [](int k){return 1000.0/(k+1);});
+nonogram_t genetic_algorithm(nonogram_t &nonogram, int iterations, bool show_progress, bool show_iterations, int pop_size, double p_crossover,
+                             double p_mutation);
 
 #endif
