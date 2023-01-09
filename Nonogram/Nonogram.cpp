@@ -91,6 +91,6 @@ int main(int argc, char **argv) {
         cout << "calls: " << calls << endl;
     if (print_time) {
         cout << "algorithm_time: " << algorithm_time << " miliseconds" << endl;
-        filePutContents("./timeout.txt", to_string(algorithm_time) + " miliseconds\n", true);
+        filePutContents("./timeout.txt", "\t" + to_string(algorithm_time) + " miliseconds\n", true);
     }
 }

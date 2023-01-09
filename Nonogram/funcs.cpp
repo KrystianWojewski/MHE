@@ -432,7 +432,7 @@ genetic_algorithm(nonogram_t &nonogram, int iterations, bool show_progress = fal
         auto selected = selection(fitnesses);
         std::vector<nonogram_t> new_population(population.size());
 
-#pragma omp parallel for
+#pragma omp parallel for schedule(dynamic, 1)
         for (int i = 0; i < (pop_size - 1); i += 2) {
             std::uniform_real_distribution<double> distr(0.0, 1.0);
             std::vector<nonogram_t> c = {population.at(selected.at(i)),

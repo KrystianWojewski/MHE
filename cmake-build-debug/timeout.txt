@@ -1,3 +1,68 @@
-7267 miliseconds
-6842 miliseconds
-6666 miliseconds
+intel core i5 10400f (12 threads)
+{
+    normal and normal opt
+    4957 miliseconds
+    5059 miliseconds
+    4740 miliseconds
+    4114 miliseconds
+    5055 miliseconds
+
+    dynamic and dynamic opt
+    4827 miliseconds
+    4683 miliseconds
+    4759 miliseconds
+    4806 miliseconds
+    4736 miliseconds
+
+    dynamic and normal opt
+    4823 miliseconds
+    4737 miliseconds
+    4879 miliseconds
+    4059 miliseconds
+    4105 miliseconds
+
+    guided and dynamic opt
+    5075 miliseconds
+    5042 miliseconds
+    4810 miliseconds
+    4234 miliseconds
+    4440 miliseconds
+
+    no opt
+    9623 miliseconds
+    9160 miliseconds
+    9259 miliseconds
+    9114 miliseconds
+    9031 miliseconds
+    9118 miliseconds
+   	9181 miliseconds
+	9370 miliseconds
+	9138 miliseconds
+	9210 miliseconds
+	avg: 9220,4
+
+    normal and dynamic opt
+    4231 miliseconds
+    4040 miliseconds
+    4089 miliseconds
+    3974 miliseconds
+    4024 miliseconds
+	4094 miliseconds
+	4024 miliseconds
+	4253 miliseconds
+	4095 miliseconds
+	4141 miliseconds
+    avg: 4096,5
+
+    normal and guided opt
+    4177 miliseconds
+    4032 miliseconds
+    4127 miliseconds
+    4027 miliseconds
+    4031 miliseconds
+	4027 miliseconds
+	4192 miliseconds
+	4048 miliseconds
+	4099 miliseconds
+	4254 miliseconds
+    avg: 4101,4
