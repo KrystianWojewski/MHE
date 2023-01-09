@@ -1,5 +1,4 @@
 #include <iostream>
-#include <iomanip>
 #include <map>
 #include <list>
 #include <functional>
@@ -10,6 +9,17 @@
 #include "funcs.h"
 #include "struct.h"
 #include "json.hpp"
+
+//std::ofstream timeline("timeout.txt");
+
+void filePutContents(const std::string& name, const std::string& content, bool append = false) {
+    std::ofstream outfile;
+    if (append)
+        outfile.open(name, std::ios_base::app);
+    else
+        outfile.open(name);
+    outfile << content;
+}
 
 int main(int argc, char **argv) {
     using namespace std;
@@ -79,6 +89,8 @@ int main(int argc, char **argv) {
         cout << "erros: " << evaluate(result) << endl;
     if (show_calls)
         cout << "calls: " << calls << endl;
-    if (print_time)
+    if (print_time) {
         cout << "algorithm_time: " << algorithm_time << " miliseconds" << endl;
+        filePutContents("./timeout.txt", to_string(algorithm_time) + " miliseconds\n", true);
+    }
 }

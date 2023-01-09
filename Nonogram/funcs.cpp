@@ -422,9 +422,17 @@ genetic_algorithm(nonogram_t &nonogram, int iterations, bool show_progress = fal
 
     for (int iteration = 0; iteration < iterations; iteration++) {
         std::vector<double> fitnesses(pop_size);
-        std::transform(population.begin(), population.end(), fitnesses.begin(), [&](auto e) { return fitness(e); });
+
+        int ps = population.size();
+#pragma omp parallel for
+        for (int i = 0; i < ps; i++) {
+            fitnesses[i] = fitness(population[i]);
+        }
+
         auto selected = selection(fitnesses);
-        std::vector<nonogram_t> new_population;
+        std::vector<nonogram_t> new_population(population.size());
+
+#pragma omp parallel for
         for (int i = 0; i < (pop_size - 1); i += 2) {
             std::uniform_real_distribution<double> distr(0.0, 1.0);
             std::vector<nonogram_t> c = {population.at(selected.at(i)),
@@ -436,10 +444,12 @@ genetic_algorithm(nonogram_t &nonogram, int iterations, bool show_progress = fal
                 if (distr(mt) > p_mutation)
                     e = mutation(e);
             }
-            new_population.push_back(c.at(0));
-            new_population.push_back(c.at(1));
+            new_population[i+0] = c.at(0);
+            new_population[i+1] = c.at(1);
         }
         population = new_population;
+//        std::sort(population.begin(), population.end(), [](auto a, auto b) { return fitness(a) > fitness(b); });
+//        std::cout << fitness(population.at(0)) << std::endl;
     }
     std::cout << std::endl;
     std::sort(population.begin(), population.end(), [](auto a, auto b) { return fitness(a) > fitness(b); });
